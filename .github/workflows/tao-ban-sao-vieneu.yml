@@ -1,0 +1,29 @@
+# GitHub Actions: máy của GitHub tự tải giọng AI VieNeu từ HuggingFace và đăng thành Release (không cần PC).
+# Đặt file này ở .github/workflows/tao-ban-sao-vieneu.yml trong một repo PUBLIC, bấm Run workflow (hoặc Claude chạy hộ).
+# Kết quả: Release "v1" có file vieneu-v3-turbo-int8.tar + sha256.txt → dán link vào assets/vieneu-model.json.
+name: tao-ban-sao-vieneu
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  dong-goi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tải model + đóng gói
+        run: |
+          pip install -q huggingface_hub
+          python dong_goi_vieneu.py
+      - name: Đăng Release v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd VIENEU-GITHUB
+          gh release delete v1 --yes --cleanup-tag 2>/dev/null || true
+          gh release create v1 vieneu-v3-turbo-int8.tar sha256.txt GIAY-PHEP.txt \
+            --title "VieNeu-TTS v3 Turbo int8 (bản sao)" \
+            --notes "Bản sao nguyên vẹn VieNeu-TTS v3 Turbo (Apache-2.0, pnnbao-ump) + MOSS-Audio-Tokenizer-Nano-ONNX cho skill quảng cáo shop. sha256: $(cat sha256.txt)"
